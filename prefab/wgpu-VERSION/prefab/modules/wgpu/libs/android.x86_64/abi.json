@@ -2,5 +2,6 @@
   "abi": "x86_64",
   "api": 23,
   "ndk": 23,
-  "stl": "c++_static"
+  "stl": "c++_static",
+  "static": true
 }

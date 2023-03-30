@@ -2,5 +2,6 @@
   "abi": "arm64-v8a",
   "api": 23,
   "ndk": 23,
-  "stl": "c++_static"
+  "stl": "c++_static",
+  "static": true
 }
