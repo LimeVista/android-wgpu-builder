@@ -119,8 +119,9 @@ jobs:
           sed -i "s/VERSION/$AAR_VER/g" $OUTPUT_DIR/prefab/prefab.json
           sed -i "s/VERSION/$AAR_VER/g" $OUTPUT_DIR.pom
 
-          cd prefab
-          zip -q -r wgpu-$AAR_VER.aar wgpu-$AAR_VER
+          cd $OUTPUT_DIR
+          zip -q -r ../wgpu-$AAR_VER.aar .
+          cd ..
           rm -rf wgpu-$AAR_VER
           
           echo `md5sum  wgpu-$AAR_VER.aar | awk '{ print $1 }'` > wgpu-$AAR_VER.aar.md5
