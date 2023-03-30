@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <groupId>me.limeice.android</groupId>
+  <artifactId>wgpu</artifactId>
+  <version>VERSION</version>
+  <packaging>aar</packaging>
+  <name>wgpu</name>
+  <description>The AAR for wgpu.</description>
+  <url>https://github.com/LimeVista/android-wgpu-builder</url>
+  <licenses>
+    <license>
+      <name>Apache-2.0 license</name>
+      <url>https://github.com/gfx-rs/wgpu-native/blob/master/LICENSE.MIT</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <name>wgpu Power By gfx-rs</name>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:https://github.com/gfx-rs/wgpu-native</connection>
+    <url>https://github.com/gfx-rs/wgpu-native</url>
+  </scm>
+</project>

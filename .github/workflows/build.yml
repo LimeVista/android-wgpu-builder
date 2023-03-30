@@ -1,0 +1,145 @@
+name: Build wgpu-native
+
+on:
+  workflow_dispatch:
+
+env:
+  WGPU_VER: v0.15.1.2
+  ARR_VER: "0.15.1.2.1"
+  ARR_VER_CODE: "1501021"
+  ANDROID_MIN_SDK: "23"
+  ANDROID_NDK_VER: r25c
+
+jobs:
+  build-wgpu:
+    name: build-wgpu-for-android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # 初始化环境
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.68
+
+      # 设置 Android NDK
+      - name: Setup Android NDK
+        shell: bash
+        run: |
+          set -ex
+          curl -LO https://dl.google.com/android/repository/android-ndk-$ANDROID_NDK_VER-linux.zip
+          unzip android-ndk-$ANDROID_NDK_VER-linux.zip
+          rm android-ndk-$ANDROID_NDK_VER-linux.zip
+
+          export ANDROID_NDK_PATH=$PWD/android-ndk-$ANDROID_NDK_VER
+          echo "ANDROID_NDK_PATH=$ANDROID_NDK_PATH" >> $GITHUB_ENV
+          echo "LIBCLANG_PATH=$ANDROID_NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/lib64/libclang.so.13" >> $GITHUB_ENV
+          echo "LLVM_CONFIG_PATH=$ANDROID_NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-config" >> $GITHUB_ENV
+          echo "BINDGEN_EXTRA_CLANG_ARGS='-isysroot $ANDROID_NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/sysroot'" >> $GITHUB_ENV
+
+      # 拉取代码
+      - name: Pull wgpu
+        shell: bash
+        run: |
+          set -ex
+          git clone --recursive -b $WGPU_VER https://github.com/gfx-rs/wgpu-native.git wgpu-native
+
+          cp -rf prefab wgpu-native/prefab
+          cd wgpu-native
+
+          # workaround missing libgcc in ndk r23+
+          mkdir -p web-gpu-native-lib
+          echo "INPUT(-lunwind)" | tee web-gpu-native-lib/libgcc.a
+          export RUSTFLAGS="-L $PWD/web-gpu-native-lib"
+
+      # 构建 x86-64
+      - name: Build x86-64
+        shell: bash
+        run: |
+          set -x
+          export CC_X86_64_PATH=$ANDROID_NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android$ANDROID_MIN_SDK-clang
+          export CC=$CC_X86_64_PATH
+          export CXX=$CC_X86_64_PATH++
+          export CLANG_PATH=$CC_X86_64_PATH
+          export CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER=$CC_X86_64_PATH
+          export CARGO_BUILD_TARGET=x86_64-linux-android
+
+          cd wgpu-native
+          rustup target add x86_64-linux-android
+          cargo build --release
+
+      # 构建 arm64
+      - name: Build arm64
+        shell: bash
+        run: |
+          set -x
+          export CC_ARM64_PATH=$ANDROID_NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android$ANDROID_MIN_SDK-clang
+          export CC=$CC_ARM64_PATH
+          export CXX=$CC_ARM64_PATH++
+          export CLANG_PATH=$CC_ARM64_PATH
+          export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$CC_ARM64_PATH
+          export CARGO_BUILD_TARGET=aarch64-linux-android
+
+          cd wgpu-native
+          rustup target add aarch64-linux-android
+          cargo build --release
+
+      # 打包
+      - name: Package
+        shell: bash
+        run: |
+          set -x
+          cd wgpu-native
+          export OUTPUT_DIR=prefab/wgpu-$ARR_VER
+
+          mv prefab/wgpu-VERSION $OUTPUT_DIR
+          mv prefab/wgpu-VERSION.pom $OUTPUT_DIR.pom
+
+          mkdir -p $OUTPUT_DIR/prefab/modules/wgpu/include/wgpu
+
+          cp -f ffi/wgpu.h $OUTPUT_DIR/prefab/modules/wgpu/include/wgpu/wgpu.h
+          cp -f ffi/webgpu-headers/webgpu.h $OUTPUT_DIR/prefab/modules/wgpu/include/wgpu/webgpu.h
+
+          ls -al target/x86_64-linux-android/release
+          ls -al target/aarch64-linux-android/release
+          ls -al $OUTPUT_DIR/prefab/modules/wgpu/libs/android.x86_64
+          ls -al $OUTPUT_DIR/prefab/modules/wgpu/libs/android.arm64-v8a
+
+          mv target/x86_64-linux-android/release/libwgpu_native.a $OUTPUT_DIR/prefab/modules/wgpu/libs/android.x86_64/libwgpu_native.a
+          mv target/aarch64-linux-android/release/libwgpu_native.a $OUTPUT_DIR/prefab/modules/wgpu/libs/android.arm64-v8a/libwgpu_native.a
+
+          sed -i 's/$VER_CODE/$ARR_VER_CODE/g' $OUTPUT_DIR/AndroidManifest.xml
+          sed -i 's/$VER_NAME/$ARR_VER/g' $OUTPUT_DIR/AndroidManifest.xml
+          sed -i 's/$VERSION/$ARR_VER/g' $OUTPUT_DIR/prefab/prefab.json
+          sed -i 's/$VERSION/$ARR_VER/g' $OUTPUT_DIR.pom
+
+          zip -q -r prefab/wgpu-$ARR_VER.aar $OUTPUT_DIR
+          cd prefab
+          
+          md5sum wgpu-$ARR_VER.aar > wgpu-$ARR_VER.aar.md5
+          md5sum wgpu-$ARR_VER.pom > wgpu-$ARR_VER.pom.md5
+          sha1sum wgpu-$ARR_VER.aar > wgpu-$ARR_VER.aar.sha1
+          sha1sum wgpu-$ARR_VER.pom > wgpu-$ARR_VER.pom.sha1
+
+          rm -rf wgpu-$ARR_VER
+          cd ..
+
+          git clone https://github.com/LimeVista/maven-repo.git /tmp/maven-repo
+          
+          mkdir -p /tmp/maven-repo/repos/me/limeice/android/wgpu
+          mv prefab /tmp/maven-repo/repos/me/limeice/android/wgpu/$ARR_VER
+
+      # 创建拉取请求
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v4
+        with:
+          path: /tmp/maven-repo
+          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+          title: '[Update] Update wgpu library'
+          commit-message: "[Update] wgpu $ARR_VER"
+          committer: GitHub <noreply@github.com>
+          body: |
+            Update report
+            - Updated wgpu $ARR_VER
+            - Auto-generated by [create-pull-request][1]
+
+            [1]: https://github.com/peter-evans/create-pull-request
