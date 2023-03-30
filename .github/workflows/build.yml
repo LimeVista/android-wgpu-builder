@@ -5,7 +5,7 @@ on:
 
 env:
   WGPU_VER: v0.15.1.2
-  AAR_VER: "0.15.1.2.3"
+  AAR_VER: "0.15.1.2.5"
   AAR_VER_CODE: "1501023"
   ANDROID_MIN_SDK: "23"
   ANDROID_NDK_VER: r25c

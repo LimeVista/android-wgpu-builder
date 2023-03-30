@@ -1,5 +1,6 @@
 {
-    "name": "wgpu",
-  "schema_version": 2,
+  "schema_version": 1,
+  "name": "wgpu",
+  "version": "VERSION",
   "dependencies": []
 }
