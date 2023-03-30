@@ -1,8 +1,7 @@
 {
   "export_libraries": [],
-  "library_name": null,
+  "library_name": "libwgpu_native",
   "android": {
-    "export_libraries": [],
-    "library_name": null
+    "export_libraries": []
   }
 }
