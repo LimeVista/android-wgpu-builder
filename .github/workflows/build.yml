@@ -5,7 +5,7 @@ on:
 
 env:
   WGPU_VER: "0.15.1.2"
-  WGPU_AAR_VER: "0.15.1.2.8"
+  WGPU_AAR_VER: "0.15.1.2.9"
   WGPU_VER_CODE: "150102"
   ANDROID_MIN_SDK: "23"
   ANDROID_NDK_VER: r25c
@@ -118,6 +118,7 @@ jobs:
           sed -i "s/VER_NAME/$WGPU_AAR_VER/g" $OUTPUT_DIR/AndroidManifest.xml
           sed -i "s/VERSION/$WGPU_AAR_VER/g" $OUTPUT_DIR.pom
           sed -i "s/VERSION/$WGPU_VER/g" $OUTPUT_DIR/prefab/prefab.json
+          sed -i "s#webgpu-headers/webgpu.h#webgpu.h#g" $OUTPUT_DIR/prefab/modules/wgpu/include/wgpu/wgpu.h
 
           cd $OUTPUT_DIR
           zip -q -r ../wgpu-$WGPU_AAR_VER.aar .
